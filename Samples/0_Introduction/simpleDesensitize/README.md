@@ -1,12 +1,12 @@
-# simpleSurfaceWrite - Simple Surface Write
+# simpleDesensitize - Simple multiple object cut library 
 
 ## Description
 
-Simple example that demonstrates the use of 2D surface references (Write-to-Texture)
+Simple example that demonstrates the use of desensitize
 
 ## Key Concepts
 
-Texture, Surface Writes, Image Processing
+Desensitize, Image Processing
 
 ## Supported SM Architectures
 

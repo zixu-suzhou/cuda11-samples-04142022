@@ -26,11 +26,11 @@
  */
 
 /*
- * This sample demonstrates how use texture fetches in CUDA
+ * This sample demonstrates how use picture cut in CUDA
  *
- * This sample takes an input PGM image (imageFilename) and generates
- * an output PGM image (imageFilename_out).  This CUDA kernel performs
- * a simple 2D transform (rotation) on the texture coordinates (u,v).
+ * This sample takes an input yuv image (test.yuv) and generates
+ * an output bgr image (test.bgr).  This CUDA kernel performs
+ * a simple multi object (sensitive object) cut from source pic .
  */
 
 // Includes, system

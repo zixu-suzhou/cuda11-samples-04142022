@@ -36,7 +36,7 @@ typedef enum {
 
   // YYYYYYYY UU VV
   CUDA_IMG_I420_BGR
-} cude_image_cmd_e;
+} cuda_image_cmd_e;
 
 
 
@@ -45,7 +45,7 @@ typedef struct cuda_dev_property {
   uint32_t device_count_with_concurrent_managed;
 } cuda_dev_property_t;
 
-typedef struct cude_dev_info {
+typedef struct cuda_dev_info {
   /*the global memory size in the gpu */
   uint64_t memory_size;
   /*the driver api version in the gpu */
@@ -58,7 +58,7 @@ typedef struct cude_dev_info {
   uint32_t device_count;
 
   cuda_dev_property_t cuda_dev_property[MAX_DEV_NUM];
-} cude_dev_info_t;
+} cuda_dev_info_t;
 
 typedef struct cuda_image {
   /*yaddr,uaddr,vaddr*/
@@ -89,7 +89,7 @@ typedef struct cuda_image_handle {
   /*pointer to the result image  */
   cuda_image_t *imageout;
   /*indicate which way you want to handle with, refer to cmd-value defined*/
-  cude_image_cmd_e image_cmd;
+  cuda_image_cmd_e image_cmd;
   /*source imgage roi info */
   cuda_img_roi_t src_img_roi;
   /*index of cuda stream */
@@ -97,9 +97,9 @@ typedef struct cuda_image_handle {
 } cuda_image_handle_t;
 
 typedef struct cuda_mat {
-  size_t x0;
+  size_t fx0;
   size_t fy0;
-  size_t calex;
+  size_t scalex;
   size_t scaley;
 } cuda_mat_t;
 
@@ -141,10 +141,10 @@ int cuda_get_dev_count(uint32_t *dev_count);
 
 /*
  *func: get information frome the specific device, such as memory size, cuda
- *verson eg. cude_dev_info: store the parameters about the device, refer to
- *cude_dev_info_t defined ret: success return 0, failed return -1
+ *verson eg. cuda_dev_info: store the parameters about the device, refer to
+ *cuda_dev_info_t defined ret: success return 0, failed return -1
  */
-int cuda_get_dev_info(cude_dev_info_t *cuda_dev_info);
+int cuda_get_dev_info(cuda_dev_info_t *cuda_dev_info);
 
 /*
  *brief:

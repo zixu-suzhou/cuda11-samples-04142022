@@ -574,7 +574,7 @@ static int host_yuv_I420_to_bgr(uint8_t *bgrbuffer, uint8_t *yuvbuffer,
 extern "C" int cuda_YUVMASK(cuda_image_handle_t *cuda_handle_image, cuda_mat_t *mat, size_t num_mat) {
   int error = -1;
   uint32_t stream_idx;
-  cude_image_cmd_e image_cmd;
+  cuda_image_cmd_e image_cmd;
   size_t width, height;
   uint8_t *srcbuffer;
   std::vector<unsigned int> results;
@@ -631,7 +631,7 @@ failed:
 extern "C" int cuda_YUV2BGR(cuda_image_handle_t *cuda_handle_image) {
   int error = -1;
   uint32_t stream_idx;
-  cude_image_cmd_e image_cmd;
+  cuda_image_cmd_e image_cmd;
   size_t width, height;
   uint8_t *dstbuffer, *srcbuffer;
 
@@ -738,7 +738,7 @@ extern "C" int cuda_get_dev_count(uint32_t *dev_count) {
   return 0;
 }
 
-extern "C" int cuda_get_dev_info(cude_dev_info_t *cuda_dev_info) {
+extern "C" int cuda_get_dev_info(cuda_dev_info_t *cuda_dev_info) {
   int i;
   cudaError_t error;
   uint32_t deviceCount;

@@ -88,7 +88,7 @@ void runTest(int argc, char **argv) {
     printf("FATAL: CUDA device init failed");
     return;
   }
-  cude_dev_info_t cuda_dev_info_;
+  cuda_dev_info_t cuda_dev_info_;
   if (0 != cuda_get_dev_info(&cuda_dev_info_)) {
     printf("FATAL: CUDA device get info failed");
     return;

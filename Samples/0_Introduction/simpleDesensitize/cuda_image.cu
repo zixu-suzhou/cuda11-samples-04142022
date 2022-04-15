@@ -59,297 +59,37 @@ static cuda_dev_ctrl_t g_cuda_dev_ctrl;
 static cudaStream_t cuda_stream_array[MAX_STREAM_COUNT];
 ///////////////////////////////////////////global
 ///kernel//////////////////////////////////////////////
-__global__ void dev_yuv422_to_bgr(uint8_t *dstbuffer, uint8_t *srcbuffer) {
-  uint8_t *pDstBuff, *pSrcBuff;
+__global__ void dev_yuv422_single_mask(size_t width, size_t height, uint8_t *yuv_in_out,
+    size_t *mat, size_t num_mat) {
 
-  uint8_t *pY;
-  uint8_t *pU;
-  uint8_t *pV;
-  uint8_t *pB;
-  uint8_t *pG;
-  uint8_t *pR;
-
-  int u;
-  int v;
-
-  int rdif;
-  int invgdif;
-  int bdif;
-
-  int r;
-  int g;
-  int b;
-
+  size_t scalex, scaley, fx0, fy0;
+  size_t i, j; //j=width, i=hight
   size_t threadid;
   size_t blockid;
+  size_t *p;
 
   blockid = blockIdx.x + blockIdx.y * gridDim.x;
   threadid = blockid * (blockDim.x * blockDim.y) + (threadIdx.y * blockDim.x) +
              threadIdx.x;
 
-  pDstBuff = dstbuffer;
-  pSrcBuff = srcbuffer;
+  j = (threadid * 2) % width;
+  i = ((threadid * 2) - j) / width;
 
-  /*********************** package格式数据转换 *******************************/
-  pY = &pSrcBuff[threadid * 4];
-  pU = &pSrcBuff[threadid * 4 + 1];
-  pV = &pSrcBuff[threadid * 4 + 3];
 
-  pB = &pDstBuff[threadid * 6 + 2];
-  pR = &pDstBuff[threadid * 6];
-  pG = &pDstBuff[threadid * 6 + 1];
-
-  // 111111111111111111111111111111111111111111111111111111111//
-  u = (int)pU[0] - 128;
-  v = (int)pV[0] - 128;
-
-  rdif = v + ((v * 103) >> 8);
-  invgdif = ((u * 88) >> 8) + ((v * 183) >> 8);
-  bdif = u + ((u * 198) >> 8);
-
-  r = pY[0] + rdif;
-  g = pY[0] - invgdif;
-  b = pY[0] + bdif;
-
-  if (r < 0) r = 0;
-  if (r > 255) r = 255;
-  if (g < 0) g = 0;
-  if (g > 255) g = 255;
-  if (b < 0) b = 0;
-  if (b > 255) b = 255;
-  *pB = r;  // b;
-  *pG = g;
-  *pR = b;  // r;
-  // 222222222222222222222222222222222222222222222222222222222222//
-  u = (int)pU[0] - 128;
-  v = (int)pV[0] - 128;
-
-  rdif = v + ((v * 103) >> 8);
-  invgdif = ((u * 88) >> 8) + ((v * 183) >> 8);
-  bdif = u + ((u * 198) >> 8);
-
-  r = pY[2] + rdif;
-  g = pY[2] - invgdif;
-  b = pY[2] + bdif;
-
-  if (r < 0) r = 0;
-  if (r > 255) r = 255;
-  if (g < 0) g = 0;
-  if (g > 255) g = 255;
-  if (b < 0) b = 0;
-  if (b > 255) b = 255;
-
-  pB[3] = r;  // b;
-  pG[3] = g;
-  pR[3] = b;  // r;
-}
-
-__global__ void dev_uvy422_to_bgr(uint8_t *dstbuffer, uint8_t *srcbuffer) {
-  uint8_t *pDstBuff, *pSrcBuff;
-
-  uint8_t *pY;
-  uint8_t *pU;
-  uint8_t *pV;
-  uint8_t *pB;
-  uint8_t *pG;
-  uint8_t *pR;
-
-  int32_t u;
-  int32_t v;
-
-  int32_t rdif;
-  int32_t invgdif;
-  int32_t bdif;
-
-  int32_t r;
-  int32_t g;
-  int32_t b;
-
-  size_t threadid;
-  size_t blockid;
-
-  blockid = blockIdx.x + blockIdx.y * gridDim.x;
-  threadid = blockid * (blockDim.x * blockDim.y) + (threadIdx.y * blockDim.x) +
-             threadIdx.x;
-
-  pDstBuff = dstbuffer;
-  pSrcBuff = srcbuffer;
-
-  /*********************** package格式数据转换 *******************************/
-  pV = &pSrcBuff[threadid * 4];
-  pY = &pSrcBuff[threadid * 4 + 1];
-  pU = &pSrcBuff[threadid * 4 + 2];
-
-  pB = &pDstBuff[threadid * 6 + 2];
-  pR = &pDstBuff[threadid * 6];
-  pG = &pDstBuff[threadid * 6 + 1];
-
-  // 111111111111111111111111111111111111111111111111111111111//
-  u = (int32_t)pU[0] - 128;
-  v = (int32_t)pV[0] - 128;
-
-  rdif = v + ((v * 103) >> 8);
-  invgdif = ((u * 88) >> 8) + ((v * 183) >> 8);
-  bdif = u + ((u * 198) >> 8);
-
-  r = pY[0] + rdif;
-  g = pY[0] - invgdif;
-  b = pY[0] + bdif;
-
-  if (r < 0) r = 0;
-  if (r > 255) r = 255;
-  if (g < 0) g = 0;
-  if (g > 255) g = 255;
-  if (b < 0) b = 0;
-  if (b > 255) b = 255;
-  *pB = b;
-  *pG = g;
-  *pR = r;
-  // 222222222222222222222222222222222222222222222222222222222222//
-  u = (int32_t)pU[0] - 128;
-  v = (int32_t)pV[0] - 128;
-
-  rdif = v + ((v * 103) >> 8);
-  invgdif = ((u * 88) >> 8) + ((v * 183) >> 8);
-  bdif = u + ((u * 198) >> 8);
-
-  r = pY[2] + rdif;
-  g = pY[2] - invgdif;
-  b = pY[2] + bdif;
-
-  if (r < 0) r = 0;
-  if (r > 255) r = 255;
-  if (g < 0) g = 0;
-  if (g > 255) g = 255;
-  if (b < 0) b = 0;
-  if (b > 255) b = 255;
-
-  pB[3] = b;
-  pG[3] = g;
-  pR[3] = r;
-}
-
-__global__ void dev_yuv420_to_bgr(uint8_t *pBGR24, uint8_t *yAddr,
-                                  uint8_t *uAddr, uint8_t *vAddr, size_t yPitch,
-                                  size_t uPitch, size_t vPitch, size_t width,
-                                  size_t height) {
-  size_t i, j;
-
-  uint8_t *yData = yAddr;
-  uint8_t *vData = uAddr;
-  uint8_t *uData = vAddr;
-  int bgr[3];
-  uint32_t yIdx, uIdx, vIdx, idx;
-
-  j = blockIdx.x * blockDim.x + threadIdx.x;
-  i = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (j >= width) {
-    return;
-  }
-
-  if (width < 1 || height < 1 || yAddr == NULL || pBGR24 == NULL) {
-    return;
-  }
-
-  yIdx = i * yPitch + j;
-  vIdx = (i >> 1) * (yPitch >> 1) + (j >> 1);
-  uIdx = vIdx;
-
-  /*  YUV420 转 BGR24 */
-  bgr[0] = (int)(yData[yIdx] + 1.370705 * (vData[uIdx] - 128));  // r分量
-  bgr[1] = (int)(yData[yIdx] - 0.698001 * (uData[uIdx] - 128) -
-                 0.703125 * (vData[vIdx] - 128));                // g分量
-  bgr[2] = (int)(yData[yIdx] + 1.732446 * (uData[vIdx] - 128));  // b分量
-
-  for (int k = 0; k < 3; k++) {
-    idx = (i * width + j) * 3 + k;
-    if (bgr[k] >= 0 && bgr[k] <= 255)
-      pBGR24[idx] = bgr[k];
-    else
-      pBGR24[idx] = (bgr[k] < 0) ? 0 : 255;
-  }
-}
-
-__global__ void dev_yuvn12pitch_to_bgr(size_t yPitch, size_t width,
-                                       size_t height, uint8_t *ybuffer,
-                                       uint8_t *uvbuffer, uint8_t *bgr) {
-  size_t i, j;
-  j = blockIdx.x * blockDim.x + threadIdx.x;
-  i = blockIdx.y * blockDim.y + threadIdx.y;
-
-  size_t threadid;
-  threadid = i * width + j;
-
-  // const int32_t uv_start = width * height;
-  int32_t index = 0, rgb_index = 0;
-  uint8_t y, u, v;
-  int32_t r, g, b, uv_index = 0;
-
-  if (j >= width) {
-    return;
-  }
-
-  rgb_index += threadid;
-
-  uv_index = i / 2 * width + j - j % 2;
-  y = ybuffer[rgb_index];
-  v = uvbuffer[uv_index];
-  u = uvbuffer[uv_index + 1];
-
-  r = y + (140 * (v - 128)) / 100;
-  g = y - (34 * (u - 128)) / 100 - (71 * (v - 128)) / 100;
-  b = y + (177 * (u - 128)) / 100;
-  if (r > 255) r = 255;
-  if (g > 255) g = 255;
-  if (b > 255) b = 255;
-  if (r < 0) r = 0;
-  if (g < 0) g = 0;
-  if (b < 0) b = 0;
-
-  // index = rgb_index % width + (height - i - 1) * width;
-  index = i * width + j;
-
-  bgr[index * 3 + 2] = b;  // r
-  bgr[index * 3 + 1] = g;
-  bgr[index * 3 + 0] = r;  // b
-}
-
-__global__ void dev_yuv_I420_to_bgr(size_t width, size_t height, uint8_t *yuyv,
-                                  uint8_t *bgr) {
-  size_t i, j;
-  j = blockIdx.x * blockDim.x + threadIdx.x;
-  i = blockIdx.y * blockDim.y + threadIdx.y;
-  if ((j < width) && (i < height)) {
-    const int32_t uv_start = width * height;
-    int32_t index = 0;
-    uint8_t y, u, v;
-    int32_t r, g, b, y_index, u_index, v_index;
-
-    y_index = i * width + j;
-    // coordinate:=(j/2, i/2) pitch:= width/2
-    u_index = (i / 2) * (width / 2) + j / 2;
-    v_index = width * height / 4 + u_index;
-
-    y = yuyv[y_index];
-    v = yuyv[uv_start + u_index];
-    u = yuyv[uv_start + v_index];
-
-    r = y + (140 * (v - 128)) / 100;
-    g = y - (34 * (u - 128)) / 100 - (71 * (v - 128)) / 100;
-    b = y + (177 * (u - 128)) / 100;
-    if (r > 255) r = 255;
-    if (g > 255) g = 255;
-    if (b > 255) b = 255;
-    if (r < 0) r = 0;
-    if (g < 0) g = 0;
-    if (b < 0) b = 0;
-
-    index = i * width + j;
-
-    bgr[index * 3 + 2] = b;  // r
-    bgr[index * 3 + 1] = g;
-    bgr[index * 3 + 0] = r;  // b
+  for(size_t l = 0; l < num_mat; l++){
+    p = (size_t*)(mat + l * 4);
+    fx0 = *p;
+    fy0 = *(p + 1);
+    scalex = *(p + 2);
+    scaley = *(p + 3);
+    if((j > fx0) 
+        && (j < fx0 + scalex)
+        && (i > fy0)
+        && (i < fy0 + scaley)
+      ){
+      yuv_in_out[threadid * 4] = 0; //erase Y
+      yuv_in_out[(threadid * 4) + 2] = 0; //erase pixel 2 ->Y
+    }
   }
 }
 
@@ -378,149 +118,37 @@ __global__ void dev_yuvn12_single_mask(size_t width, size_t height, uint8_t *yuy
   }
 }
 
-
-__global__ void dev_yuvn12_to_bgr(size_t width, size_t height, uint8_t *yuyv,
-                                  uint8_t *bgr) {
-  size_t i, j;
-  j = blockIdx.x * blockDim.x + threadIdx.x;
-  i = blockIdx.y * blockDim.y + threadIdx.y;
-  if ((j < width) && (i < height)) {
-    size_t threadid;
-    threadid = i * width + j;
-
-    const int32_t uv_start = width * height;
-    int32_t index = 0, rgb_index = 0;
-    uint8_t y, u, v;
-    int32_t r, g, b, uv_index = 0;
-
-    rgb_index += threadid;
-
-    uv_index = i / 2 * width + j - j % 2;
-    y = yuyv[rgb_index];
-    v = yuyv[uv_start + uv_index];
-    u = yuyv[uv_start + uv_index + 1];
-
-    r = y + (140 * (v - 128)) / 100;
-    g = y - (34 * (u - 128)) / 100 - (71 * (v - 128)) / 100;
-    b = y + (177 * (u - 128)) / 100;
-    if (r > 255) r = 255;
-    if (g > 255) g = 255;
-    if (b > 255) b = 255;
-    if (r < 0) r = 0;
-    if (g < 0) g = 0;
-    if (b < 0) b = 0;
-
-    // index = rgb_index % width + (height - i - 1) * width;
-    index = i * width + j;
-
-    bgr[index * 3 + 2] = b;  // r
-    bgr[index * 3 + 1] = g;
-    bgr[index * 3 + 0] = r;  // b
-  }
-}
-
 ///////////////////////////////////////////host
 ///funcs//////////////////////////////////////////////
-static int host_yuv420_to_bgr(uint8_t *bgrbuffer, uint8_t *yuvbuffer[3],
-                              size_t pitch[3], size_t width, size_t height,
+
+static int host_yuv422_single_mask(uint8_t *yuvbuffer,
+                              size_t width, size_t height, cuda_mat_t *mat, size_t num_mat,
                               cudaStream_t stream) {
-  if (NULL == bgrbuffer || NULL == yuvbuffer) {
-    LOGCUDA("%s invalid param\n", __func__);
-    return -1;
-  }
-
-  dim3 dimBlock(128, 8);
-  dim3 dimGrid(pitch[0] / dimBlock.x, height / dimBlock.y);
-
-  dev_yuv420_to_bgr<<<dimGrid, dimBlock, 0, stream>>>(
-      (uint8_t *)bgrbuffer, yuvbuffer[0], yuvbuffer[1], yuvbuffer[2], pitch[0],
-      pitch[1], pitch[2], width, height);
-
-  return 0;
-}
-
-static int host_yuv422_to_bgr888(uint8_t *bgrbuffer, uint8_t *yuvbuffer,
-                                 size_t width, size_t height,
-                                 cudaStream_t stream) {
   size_t iw, ih;
-
-  if (NULL == bgrbuffer || NULL == yuvbuffer) {
+  if (NULL == yuvbuffer) {
     LOGCUDA("%s invalid param\n", __func__);
     return -1;
   }
+  if(num_mat > 100){
+    LOGCUDA("illegal mat num %zu", num_mat);
+    return -1;
+  }
+  size_t *gpu_mat = (size_t*)cuda_malloc(num_mat * sizeof(size_t) * 4);
+  cuda_memcpy(gpu_mat, mat, num_mat * sizeof(size_t) * 4, CUDA_HOST_TO_DEV);
 
+  /* 8 bytes contains 4 pixels */
   iw = width / 2;
   ih = height;
-
   dim3 dimBlock(64, 8);
   dim3 dimGrid(iw / dimBlock.x, ih / dimBlock.y);
 
-  dev_yuv422_to_bgr<<<dimGrid, dimBlock, 0, stream>>>(bgrbuffer, yuvbuffer);
+  dev_yuv422_single_mask<<<dimGrid, dimBlock, 0, stream>>>(width, height, yuvbuffer, (size_t *)gpu_mat, num_mat);
+
+  cuda_free(gpu_mat);
 
   return 0;
 }
 
-static int host_uvy422_to_bgr888(uint8_t *bgrbuffer, uint8_t *yuvbuffer,
-                                 size_t width, size_t height,
-                                 cudaStream_t stream) {
-  size_t iw, ih;
-
-  if (NULL == bgrbuffer || NULL == yuvbuffer) {
-    LOGCUDA("%s invalid param\n", __func__);
-    return -1;
-  }
-
-  iw = width / 2;
-  ih = height;
-
-  dim3 dimBlock(64, 8);
-  dim3 dimGrid(iw / dimBlock.x, ih / dimBlock.y);
-
-  dev_uvy422_to_bgr<<<dimGrid, dimBlock, 0, stream>>>(bgrbuffer, yuvbuffer);
-
-  return 0;
-}
-
-static int host_yuvn12pitch_to_bgr(uint8_t *bgrbuffer, uint8_t *yuvbuffer[3],
-                                   size_t pitch[3], size_t width, size_t height,
-                                   cudaStream_t stream) {
-  size_t ih;
-
-  if (NULL == bgrbuffer || NULL == yuvbuffer) {
-    LOGCUDA("%s invalid param\n", __func__);
-    return -1;
-  }
-
-  ih = height;
-
-  dim3 dimBlock(128, 8);
-  dim3 dimGrid(pitch[0] / dimBlock.x, ih / dimBlock.y);
-  dev_yuvn12pitch_to_bgr<<<dimGrid, dimBlock, 0, stream>>>(
-      pitch[0], width, height, yuvbuffer[0], yuvbuffer[1], bgrbuffer);
-
-  return 0;
-}
-
-static int host_yuvn12_to_bgr(uint8_t *bgrbuffer, uint8_t *yuvbuffer,
-                              size_t width, size_t height,
-                              cudaStream_t stream) {
-  size_t iw, ih;
-  if (NULL == bgrbuffer || NULL == yuvbuffer) {
-    LOGCUDA("%s invalid param\n", __func__);
-    return -1;
-  }
-
-  iw = width;
-  ih = height;
-
-  dim3 dimBlock(64, 8);
-  dim3 dimGrid((iw + dimBlock.x - 1) / dimBlock.x,
-               (ih + dimBlock.y - 1) / dimBlock.y);
-  dev_yuvn12_to_bgr<<<dimGrid, dimBlock, 0, stream>>>(width, height, yuvbuffer,
-                                                      bgrbuffer);
-
-  return 0;
-}
 
 static int host_yuvn12_single_mask(uint8_t *yuvbuffer,
                               size_t width, size_t height, cuda_mat_t *mat, size_t num_mat,
@@ -549,27 +177,6 @@ static int host_yuvn12_single_mask(uint8_t *yuvbuffer,
   return 0;
 }
 
-static int host_yuv_I420_to_bgr(uint8_t *bgrbuffer, uint8_t *yuvbuffer,
-                                size_t width, size_t height,
-                                cudaStream_t stream) {
-  size_t iw, ih;
-  if (NULL == bgrbuffer || NULL == yuvbuffer) {
-    LOGCUDA("%s invalid param\n", __func__);
-    return -1;
-  }
-
-  iw = width;
-  ih = height;
-
-  dim3 dimBlock(128, 8);
-  dim3 dimGrid((iw + dimBlock.x - 1) / dimBlock.x,
-               (ih + dimBlock.y - 1) / dimBlock.y);
-               
-  dev_yuv_I420_to_bgr<<<dimGrid, dimBlock, 0, stream>>>(width, height, yuvbuffer,
-                                                      bgrbuffer);
-
-  return 0;
-}
 
 extern "C" int cuda_YUVMASK(cuda_image_handle_t *cuda_handle_image, cuda_mat_t *mat, size_t num_mat) {
   int error = -1;
@@ -596,15 +203,25 @@ extern "C" int cuda_YUVMASK(cuda_image_handle_t *cuda_handle_image, cuda_mat_t *
   }
 
   switch (image_cmd) {
-    case CUDA_IMG_YUV422_BGR888:
+    case CUDA_IMG_YUV422:
+      error = host_yuv422_single_mask(srcbuffer, width, height, mat, num_mat, 
+          cuda_stream_array[stream_idx]);
+      if (error) {
+        LOGCUDA("%s: host_yuv422_single_mask err\n", __func__);
+        goto failed;
+      }
       break;
-    case CUDA_IMG_UVY422_BGR888:
+
+    case CUDA_IMG_UVY422:
       break;
-    case CUDA_IMG_YUV420PITCH_BGR888:
+
+    case CUDA_IMG_YUV420PITCH:
       break;
-    case CUDA_IMG_YUV420SPPITCH_BGR888:
+
+    case CUDA_IMG_YUV420SPPITCH:
       break;
-    case CUDA_IMG_YUV420SP_BGR888:
+
+    case CUDA_IMG_YUV420SP:
       error = host_yuvn12_single_mask(srcbuffer, width, height, mat, num_mat, 
           cuda_stream_array[stream_idx]);
       if (error) {
@@ -612,100 +229,10 @@ extern "C" int cuda_YUVMASK(cuda_image_handle_t *cuda_handle_image, cuda_mat_t *
         goto failed;
       }
       break;
-    case CUDA_IMG_I420_BGR:
-      break;
-    default:
-      LOGCUDA("%s: invalid image cmd\n", __func__);
-      goto failed;
-  }
 
-  return 0;
-
-failed:
-  return -1;
-
-
-
-}
-
-extern "C" int cuda_YUV2BGR(cuda_image_handle_t *cuda_handle_image) {
-  int error = -1;
-  uint32_t stream_idx;
-  cuda_image_cmd_e image_cmd;
-  size_t width, height;
-  uint8_t *dstbuffer, *srcbuffer;
-
-  if (NULL == cuda_handle_image) {
-    LOGCUDA("%s: invalid param\n", __func__);
-    goto failed;
-  }
-
-  srcbuffer = (uint8_t *)cuda_handle_image->imagein->plan_buffer[0];
-  dstbuffer = (uint8_t *)cuda_handle_image->imageout->plan_buffer[0];
-  width = cuda_handle_image->imagein->width;
-  height = cuda_handle_image->imagein->height;
-  image_cmd = cuda_handle_image->image_cmd;
-
-  stream_idx = cuda_handle_image->stream_idx;
-  if (stream_idx > (MAX_STREAM_COUNT - 1)) {
-    LOGCUDA("%s: exceed valid stream count\n", __func__);
-    goto failed;
-  }
-
-  switch (image_cmd) {
-    case CUDA_IMG_YUV422_BGR888:
-      error = host_yuv422_to_bgr888(dstbuffer, srcbuffer, width, height,
-                                    cuda_stream_array[stream_idx]);
-      if (error) {
-        LOGCUDA("%s: host_yuv422_to_bgr888 err\n", __func__);
-        goto failed;
-      }
-      break;
-    case CUDA_IMG_UVY422_BGR888:
-      error = host_uvy422_to_bgr888(dstbuffer, srcbuffer, width, height,
-                                    cuda_stream_array[stream_idx]);
-      if (error) {
-        LOGCUDA("%s: host_uvy422_to_bgr888 err\n", __func__);
-        goto failed;
-      }
-      break;
-    case CUDA_IMG_YUV420PITCH_BGR888:
-      error = host_yuv420_to_bgr(
-          dstbuffer, (uint8_t **)cuda_handle_image->imagein->plan_buffer,
-          cuda_handle_image->imagein->plan_pitch, width, height,
-          cuda_stream_array[stream_idx]);
-      if (error) {
-        LOGCUDA("%s: host_yuv420_to_bgr err\n", __func__);
-        goto failed;
-      }
-      break;
-    case CUDA_IMG_YUV420SPPITCH_BGR888:
-      error = host_yuvn12pitch_to_bgr(
-          dstbuffer, (uint8_t **)cuda_handle_image->imagein->plan_buffer,
-          cuda_handle_image->imagein->plan_pitch, width, height,
-          cuda_stream_array[stream_idx]);
-      if (error) {
-        LOGCUDA("%s: host_yuvn12_to_bgr err\n", __func__);
-        goto failed;
-      }
-      break;
-    case CUDA_IMG_YUV420SP_BGR888:
-      error = host_yuvn12_to_bgr(dstbuffer, srcbuffer, width, height,
-                                 cuda_stream_array[stream_idx]);
-      if (error) {
-        LOGCUDA("%s: host_yuvn12_to_bgr err\n", __func__);
-        goto failed;
-      }
+    case CUDA_IMG_I420:
       break;
 
-    case CUDA_IMG_I420_BGR:
-      error = host_yuv_I420_to_bgr(dstbuffer, srcbuffer, width, height,
-                                   cuda_stream_array[stream_idx]);
-      if (error) {
-        LOGCUDA("%s: host_yuvn12_to_bgr err\n", __func__);
-        goto failed;
-      }
-      break;
     default:
       LOGCUDA("%s: invalid image cmd\n", __func__);
       goto failed;
@@ -716,7 +243,6 @@ extern "C" int cuda_YUV2BGR(cuda_image_handle_t *cuda_handle_image) {
 failed:
   return -1;
 }
-
 
 ///////////////////////////////////////////host api----init or
 ///config//////////////////////////////////////////////

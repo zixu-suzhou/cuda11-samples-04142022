@@ -20,22 +20,22 @@ typedef enum {
 
 /*cmd-value*/
 typedef enum {
-  /* convert yuv422 to bgr888 */
-  CUDA_IMG_YUV422_BGR888 = 0X00,
+  /*yuv422*/
+  CUDA_IMG_YUV422 = 0X00,
 
-  CUDA_IMG_UVY422_BGR888,
+  CUDA_IMG_UVY422,
 
   /* YYYYYYYYXXXX..,UUX...,VVX... */
-  CUDA_IMG_YUV420PITCH_BGR888,
+  CUDA_IMG_YUV420PITCH,
 
   /*YYYYYYYY,UV,UV: NV12*/
-  CUDA_IMG_YUV420SP_BGR888,
+  CUDA_IMG_YUV420SP,
 
   /*YYYYYYYY,UV,UV*/
-  CUDA_IMG_YUV420SPPITCH_BGR888,
+  CUDA_IMG_YUV420SPPITCH,
 
   // YYYYYYYY UU VV
-  CUDA_IMG_I420_BGR
+  CUDA_IMG_I420
 } cuda_image_cmd_e;
 
 
@@ -194,12 +194,6 @@ void cuda_free(void *buffer);
  */
 void *cuda_memcpy(void *dst, void *src, size_t size, cuda_memcpy_direct_e dir);
 
-/*
- *func: convert yuv to bgr.
- *cuda_image: the image struct, contain the resolution, cmd eg. refer to
- *cuda_image_handle_t define. ret: success return 0, failed return -1.
- */
-int cuda_YUV2BGR(cuda_image_handle_t *cuda_image);
 int cuda_YUVMASK(cuda_image_handle_t *cuda_image, cuda_mat_t *mat, size_t num_mat);
 
 int cuda_dev_check(uint32_t *devidx);

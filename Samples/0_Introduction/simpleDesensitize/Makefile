@@ -336,6 +336,6 @@ run: build
 testrun: build
 
 clean:
-	rm -f simpleDesensitize simpleDesensitize.o   cuda_image.o 
+	rm -f simpleDesensitize simpleDesensitize.o   cuda_image.o  ./data/output*
 
 clobber: clean

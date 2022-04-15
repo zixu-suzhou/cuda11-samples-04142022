@@ -85,46 +85,39 @@ int main(int argc, char **argv) {
 ////////////////////////////////////////////////////////////////////////////////
 void runTest(int argc, char **argv) {
   if (0 != cuda_dev_init()) {
-    printf("FATAL: CUDA device init failed");
+    printf("FATAL: CUDA device init failed\n");
     return;
   }
   cuda_dev_info_t cuda_dev_info_;
   if (0 != cuda_get_dev_info(&cuda_dev_info_)) {
-    printf("FATAL: CUDA device get info failed");
+    printf("FATAL: CUDA device get info failed\n");
     return;
   }
 
   int yuv_width = 2896;
   int yuv_height = 1876;
   int yuv_image_size = yuv_width * yuv_height * 3 / 2;
-  int bgr_width = 2896;
-  int bgr_height = 1876;
-  int bgr_image_size = bgr_width * bgr_height * 3;
-  uint8_t *bgr_gpu_buf;
-  uint8_t *bgr_cpu_buf;
   uint8_t *yuv_gpu_buf;
   uint8_t *yuv_cpu_buf;
 
-  bgr_gpu_buf = (uint8_t *)cuda_malloc(bgr_image_size + 2560);
   yuv_gpu_buf = (uint8_t *)cuda_malloc(yuv_image_size + 2560);
 #if 0
-  bgr_cpu_buf = (uint8_t *)cuda_malloc_unified(bgr_image_size + 2560, CUDA_HOST);
   yuv_cpu_buf = (uint8_t *)cuda_malloc_unified(yuv_image_size + 2560, CUDA_HOST);
 #else
-  bgr_cpu_buf = (uint8_t *)malloc(bgr_image_size + 2560);
   yuv_cpu_buf = (uint8_t *)malloc(yuv_image_size + 2560);
 #endif
-  if (!bgr_cpu_buf || !yuv_cpu_buf || !bgr_gpu_buf || !yuv_gpu_buf) {
-    printf("error while malloc GPU buffers!");
+  if (!yuv_cpu_buf || !yuv_gpu_buf) {
+    printf("error while malloc GPU buffers!\n");
     return;
   }
 
   FILE *fp = NULL;
-  fp = fopen("./data/test.yuv", "rb");
+  fp = fopen("./data/yuvnv12.yuv", "rb");
   if (!fp) {
-    printf("FATAL: fail to open yuv file");
+    printf("FATAL: fail to open yuv file\n");
     return;
   }
+
   fread(yuv_cpu_buf, 1, yuv_image_size, fp);
   fclose(fp);
   cuda_memcpy(yuv_gpu_buf, yuv_cpu_buf, yuv_image_size, CUDA_HOST_TO_DEV);
@@ -133,11 +126,7 @@ void runTest(int argc, char **argv) {
   struct timeval time;
   long long int microSeconds, oldmicroSeconds;
   cuda_image_handle_t cuda_image_convert;
-  cuda_image_t cuda_bgr_image, cuda_yuv_image;
-
-  cuda_bgr_image.width = bgr_width;
-  cuda_bgr_image.height = bgr_height;
-  cuda_bgr_image.plan_buffer[0] = bgr_gpu_buf;
+  cuda_image_t cuda_yuv_image;
 
   cuda_yuv_image.width = yuv_width;
   cuda_yuv_image.height = yuv_height;
@@ -151,48 +140,119 @@ void runTest(int argc, char **argv) {
   cuda_yuv_image.plan_pitch[0] = yuv_width * yuv_height;
   cuda_yuv_image.plan_pitch[1] = yuv_width * yuv_height / 4;
   cuda_yuv_image.plan_pitch[2] = yuv_width * yuv_height / 4;
-  cuda_image_convert.image_cmd = CUDA_IMG_YUV420SP_BGR888;
+  cuda_image_convert.image_cmd = CUDA_IMG_YUV420SP;
 
   cuda_image_convert.imagein = &cuda_yuv_image;
-  cuda_image_convert.imageout = &cuda_bgr_image;
+  cuda_image_convert.imageout = &cuda_yuv_image;
   cuda_image_convert.stream_idx = 0;
 
   gettimeofday(&time, NULL);
   oldmicroSeconds = 1000000 * time.tv_sec + time.tv_usec;
 
-  cuda_mat_t mat[3] = {
-      {1000, 500, 100, 100}, {2000, 500, 100, 100}, {1000, 1000, 200, 200}};
-  size_t num_mat = 3;
+  cuda_mat_t mat[4] = {
+    {300, 300, 50, 50}, 
+    {500, 500, 100, 100}, 
+    {1000, 1000, 200, 200}, 
+    {2000, 1500, 300, 300}};
+  size_t num_mat = 4;
   ret = cuda_YUVMASK(&cuda_image_convert, mat, num_mat);
+  if(ret){
+    printf("cuda_YUVMASK failed with ret=%d, output saving will continue\n", ret);
+  }
 
   gettimeofday(&time, NULL);
   microSeconds = 1000000 * time.tv_sec + time.tv_usec;
   printf("yuvmask time used: %lld\n", microSeconds - oldmicroSeconds);
 
-  ret = cuda_YUV2BGR(&cuda_image_convert);
-  if (ret) {
-    printf("%s: yuv2bgr err\n", __func__);
+  cuda_memcpy(yuv_cpu_buf, yuv_gpu_buf, yuv_image_size, CUDA_DEV_TO_HOST);
+  fp = fopen("./data/output_nv12.yuv", "wb");
+  if (!fp) {
+    printf("failed to open file for saveing output image\n");
     return;
   }
+
+  fwrite(yuv_cpu_buf, 1, yuv_image_size, fp);
+  fclose(fp);
+
+  cuda_free(yuv_gpu_buf);
+  free(yuv_cpu_buf);
+
+
+
+  yuv_width = 1280;
+  yuv_height = 960;
+  yuv_image_size = yuv_width * yuv_height * 2;
+
+  yuv_gpu_buf = (uint8_t *)cuda_malloc(yuv_image_size + 2560);
+#if 0
+  yuv_cpu_buf = (uint8_t *)cuda_malloc_unified(yuv_image_size + 2560, CUDA_HOST);
+#else
+  yuv_cpu_buf = (uint8_t *)malloc(yuv_image_size + 2560);
+#endif
+  if (!yuv_cpu_buf || !yuv_gpu_buf) {
+    printf("error while malloc GPU buffers!\n");
+    return;
+  }
+
+  fp = NULL;
+  fp = fopen("./data/yuv422.yuv", "rb");
+  if (!fp) {
+    printf("FATAL: fail to open yuv file\n");
+    return;
+  }
+
+  fread(yuv_cpu_buf, 1, yuv_image_size, fp);
+  fclose(fp);
+  cuda_memcpy(yuv_gpu_buf, yuv_cpu_buf, yuv_image_size, CUDA_HOST_TO_DEV);
+
+  ret = 0;
+
+  cuda_yuv_image.width = yuv_width;
+  cuda_yuv_image.height = yuv_height;
+
+  cuda_yuv_image.plan_buffer[0] = yuv_gpu_buf;
+  cuda_yuv_image.plan_buffer[1] =
+      cuda_yuv_image.plan_buffer[0] + yuv_width * yuv_height;
+  cuda_yuv_image.plan_buffer[2] =
+      cuda_yuv_image.plan_buffer[1] + yuv_width * yuv_height / 4;
+
+  cuda_yuv_image.plan_pitch[0] = yuv_width * yuv_height;
+  cuda_yuv_image.plan_pitch[1] = yuv_width * yuv_height / 4;
+  cuda_yuv_image.plan_pitch[2] = yuv_width * yuv_height / 4;
+  cuda_image_convert.image_cmd = CUDA_IMG_YUV422;
+
+  cuda_image_convert.imagein = &cuda_yuv_image;
+  cuda_image_convert.imageout = &cuda_yuv_image;
+  cuda_image_convert.stream_idx = 0;
+
   gettimeofday(&time, NULL);
   oldmicroSeconds = 1000000 * time.tv_sec + time.tv_usec;
-  printf("yuv2bgr time used: %lld\n", oldmicroSeconds - microSeconds);
-  cuda_memcpy(bgr_cpu_buf, bgr_gpu_buf, bgr_image_size, CUDA_DEV_TO_HOST);
-#if 0
-  cv::Mat cpu_mat(bgr_height, bgr_width, CV_8UC3, bgr_cpu_buf);
-  cv::imwrite("./data/test.jpg", cpu_mat);
 
-  fp = fopen("./data/test.bgr", "wb");
+  num_mat = 2;
+  ret = cuda_YUVMASK(&cuda_image_convert, mat, num_mat);
+  if(ret){
+    printf("cuda_YUVMASK failed with ret=%d, output saving will continue\n", ret);
+  }
+
+  gettimeofday(&time, NULL);
+  microSeconds = 1000000 * time.tv_sec + time.tv_usec;
+  printf("yuvmask time used: %lld\n", microSeconds - oldmicroSeconds);
+
+  cuda_memcpy(yuv_cpu_buf, yuv_gpu_buf, yuv_image_size, CUDA_DEV_TO_HOST);
+  fp = fopen("./data/output_422.yuv", "wb");
   if (!fp) {
+    printf("failed to open file for saveing output image\n");
     return;
   }
-  fwrite(bgr_cpu_buf, 1, bgr_image_size, fp);
-  fclose(fp);
-#endif
 
-  cuda_free(bgr_gpu_buf);
+  fwrite(yuv_cpu_buf, 1, yuv_image_size, fp);
+  fclose(fp);
+
   cuda_free(yuv_gpu_buf);
+  free(yuv_cpu_buf);
+
 
   return;
 
 }
+

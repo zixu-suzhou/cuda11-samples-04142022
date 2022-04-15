@@ -27,19 +27,14 @@ cudaFree, cudaMemcpyToArray, cudaFreeArray, cudaDestroySurfaceObject, cudaCreate
 
 ## Prerequisites
 
-Download and install the [CUDA Toolkit 11.6](https://developer.nvidia.com/cuda-downloads) for your corresponding platform.
+Download and install the [CUDA Toolkit 11.4](https://developer.nvidia.com/cuda-downloads) or [CUDA Toolkit 11.6](https://developer.nvidia.com/cuda-downloads) for your corresponding platform.
+
+put tar sdk into cuda11-samples/Samples/0_Introduction/ or your specific sample installation dir
 
 ## Build and Run
 
-### Windows
-The Windows samples are built using the Visual Studio IDE. Solution files (.sln) are provided for each supported version of Visual Studio, using the format:
-```
-*_vs<version>.sln - for Visual Studio <version>
-```
-Each individual sample has its own set of solution files in its directory:
+> **Note:** Support cuda 11.4 (orin) and cuda 11."
 
-To build/examine all the samples at once, the complete solution files should be used. To build/examine a single sample, the individual sample solution files should be used.
-> **Note:** Some samples require that the Microsoft DirectX SDK (June 2010 or newer) be installed and that the VC++ directory paths are properly set up (**Tools > Options...**). Check DirectX Dependencies section for details."
 
 ### Linux
 The Linux samples are built using makefiles. To use the makefiles, change the current directory to the sample directory you wish to build, and run make:
@@ -47,6 +42,17 @@ The Linux samples are built using makefiles. To use the makefiles, change the cu
 $ cd <sample_dir>
 $ make
 ```
+### Orin
+```
+$ cd <sample_dir>
+$ make TARGET_ARCH=aarch64
+$ ./simpleDesensitize
+```
+After run, you will see sample output from .data folder
+./data/output_422.yuv
+./data/output_nv12.yuv
+
+
 The samples makefiles can take advantage of certain options:
 *  **TARGET_ARCH=<arch>** - cross-compile targeting a specific architecture. Allowed architectures are x86_64, ppc64le, armv7l.
     By default, TARGET_ARCH is set to HOST_ARCH. On a x86_64 machine, not setting TARGET_ARCH is the equivalent of setting TARGET_ARCH=x86_64.<br/>
@@ -67,4 +73,6 @@ The samples makefiles can take advantage of certain options:
 ```
 
 ## References (for more details)
+
+authored by zhangdonghua@momenta.ai
 

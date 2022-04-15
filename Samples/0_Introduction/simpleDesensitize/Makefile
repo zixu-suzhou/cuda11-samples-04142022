@@ -263,6 +263,7 @@ ALL_CCFLAGS += $(NVCCFLAGS)
 ALL_CCFLAGS += $(EXTRA_NVCCFLAGS)
 ALL_CCFLAGS += $(addprefix -Xcompiler ,$(CCFLAGS))
 ALL_CCFLAGS += $(addprefix -Xcompiler ,$(EXTRA_CCFLAGS))
+ALL_CCFLAGS += -Wno-deprecated-gpu-targets
 
 SAMPLE_ENABLED := 1
 
@@ -300,7 +301,7 @@ GENCODE_FLAGS += -gencode arch=compute_$(HIGHEST_SM),code=compute_$(HIGHEST_SM)
 endif
 endif
 
-ALL_CCFLAGS += --threads 0 --std=c++11
+ALL_CCFLAGS += --threads 0 --std=c++11 
 
 ifeq ($(SAMPLE_ENABLED),0)
 EXEC ?= @echo "[@]"

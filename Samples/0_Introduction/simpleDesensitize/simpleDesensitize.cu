@@ -34,13 +34,14 @@
  */
 
 // Includes, system
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
+
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -169,14 +170,19 @@ void runTest(int argc, char **argv) {
   microSeconds = 1000000 * time.tv_sec + time.tv_usec;
   printf("yuvmask time used: %lld\n", microSeconds - oldmicroSeconds);
 
-  ret = cuda_YUV2BGR(&cuda_image_convert);
-  if (ret) {
-    printf("%s: yuv2bgr err\n", __func__);
-    return;
+  while (1) {
+    gettimeofday(&time, NULL);
+    microSeconds = 1000000 * time.tv_sec + time.tv_usec;
+    printf("cuda YUV2BGR\n");
+    // usleep(1000);
+    ret = cuda_YUV2BGR(&cuda_image_convert);
+    if (ret) {
+      printf("%s: yuv2bgr err\n", __func__);
+    }
+    gettimeofday(&time, NULL);
+    oldmicroSeconds = 1000000 * time.tv_sec + time.tv_usec;
+    printf("yuv2bgr time used: %lld\n", oldmicroSeconds - microSeconds);
   }
-  gettimeofday(&time, NULL);
-  oldmicroSeconds = 1000000 * time.tv_sec + time.tv_usec;
-  printf("yuv2bgr time used: %lld\n", oldmicroSeconds - microSeconds);
   cuda_memcpy(bgr_cpu_buf, bgr_gpu_buf, bgr_image_size, CUDA_DEV_TO_HOST);
 #if 0
   cv::Mat cpu_mat(bgr_height, bgr_width, CV_8UC3, bgr_cpu_buf);
@@ -194,5 +200,4 @@ void runTest(int argc, char **argv) {
   cuda_free(yuv_gpu_buf);
 
   return;
-
 }

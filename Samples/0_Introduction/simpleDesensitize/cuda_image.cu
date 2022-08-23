@@ -97,8 +97,12 @@ __global__ void dev_yuvn12_single_mask(size_t width, size_t height, uint8_t *yuy
     size_t *mat, size_t num_mat) {
 
   size_t i, j;
+  int32_t uv_index = 0;
   j = blockIdx.x * blockDim.x + threadIdx.x;
   i = blockIdx.y * blockDim.y + threadIdx.y;
+
+  const int32_t uv_start = width * height;
+  uv_index = i / 2 * width + j - j % 2;
 
   size_t scalex, scaley, fx0, fy0;
   size_t *p;
@@ -113,7 +117,9 @@ __global__ void dev_yuvn12_single_mask(size_t width, size_t height, uint8_t *yuy
         && (i > fy0)
         && (i < fy0 + scaley)
       ){
-      yuyv_in_out[i * width + j] = 0; //y = black
+      yuyv_in_out[i * width + j] = 0; 			//y = black
+      yuyv_in_out[uv_start + uv_index] = 128;      	//v
+      yuyv_in_out[uv_start + uv_index + 1] = 128;  	//u
     }
   }
 }
